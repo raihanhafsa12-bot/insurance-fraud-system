@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, precision_score, recall_score, classification_report
+from imblearn.over_sampling import SMOTE
 import joblib
 import os
 
@@ -57,15 +58,34 @@ for col in categorical_cols:
 X = df_clean[features]
 y = df_clean['fraud_reported']
 
-# Split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+print(f"\nOriginal class distribution:")
+print(f"Genuine:     {(y==0).sum()}")
+print(f"Fraudulent:  {(y==1).sum()}")
 
-print(f"Training samples: {len(X_train)}")
+# Balance with SMOTE
+print("\nBalancing dataset with SMOTE...")
+smote = SMOTE(random_state=42)
+X_balanced, y_balanced = smote.fit_resample(X, y)
+
+print(f"\nBalanced class distribution:")
+print(f"Genuine:     {(y_balanced==0).sum()}")
+print(f"Fraudulent:  {(y_balanced==1).sum()}")
+
+# Split into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X_balanced, y_balanced, test_size=0.2, random_state=42)
+
+print(f"\nTraining samples: {len(X_train)}")
 print(f"Test samples: {len(X_test)}")
 
-# Train Random Forest model
+# Train Random Forest model with balanced class weights
 print("\nTraining Random Forest Classifier...")
-model = RandomForestClassifier(n_estimators=100, random_state=42)
+model = RandomForestClassifier(
+    n_estimators=200,
+    class_weight='balanced',
+    max_depth=10,
+    min_samples_split=5,
+    random_state=42
+)
 model.fit(X_train, y_train)
 
 # Make predictions
@@ -73,13 +93,21 @@ y_pred = model.predict(X_test)
 
 # Evaluate
 print("\n" + "="*50)
-print("MODEL PERFORMANCE")
+print("MODEL PERFORMANCE (Balanced)")
 print("="*50)
 print(f"Accuracy:  {accuracy_score(y_test, y_pred):.4f}")
 print(f"Precision: {precision_score(y_test, y_pred):.4f}")
 print(f"Recall:    {recall_score(y_test, y_pred):.4f}")
 print("\nClassification Report:")
 print(classification_report(y_test, y_pred, target_names=['Genuine', 'Fraudulent']))
+
+# Feature importance
+print("\nTop 10 Important Features:")
+importances = pd.DataFrame({
+    'feature': features,
+    'importance': model.feature_importances_
+}).sort_values('importance', ascending=False)
+print(importances.head(10).to_string(index=False))
 
 # Save the model and encoders
 os.makedirs('models', exist_ok=True)
@@ -89,3 +117,4 @@ joblib.dump(features, 'models/features.pkl')
 
 print("\n✅ Model saved to models/fraud_model.pkl")
 print("✅ Encoders saved to models/label_encoders.pkl")
+print("\nNow restart the ML service: python main.py")
