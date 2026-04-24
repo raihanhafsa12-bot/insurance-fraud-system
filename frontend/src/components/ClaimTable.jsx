@@ -1,0 +1,45 @@
+import React from 'react';
+import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+
+const ClaimTable = ({ claims }) => {
+  return (
+    <div className="mt-12 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <table className="w-full text-left border-collapse">
+        <thead className="bg-slate-50 border-b border-slate-100">
+          <tr>
+            <th className="p-4 font-semibold text-slate-600 text-sm">Policy</th>
+            <th className="p-4 font-semibold text-slate-600 text-sm">Claimant</th>
+            <th className="p-4 font-semibold text-slate-600 text-sm">Amount</th>
+            <th className="p-4 font-semibold text-slate-600 text-sm">Fraud Score</th>
+            <th className="p-4 font-semibold text-slate-600 text-sm">Status</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-50">
+          {claims.map((claim) => (
+            <tr key={claim._id} className="hover:bg-slate-50/50 transition-colors">
+              <td className="p-4 text-sm font-medium">{claim.policyNumber}</td>
+              <td className="p-4 text-sm text-slate-600">{claim.claimantName}</td>
+              <td className="p-4 text-sm font-semibold">${claim.claimAmount}</td>
+              <td className="p-4 text-sm">
+                <span className={`px-3 py-1 rounded-full font-bold ${
+                  claim.fraudScore > 0.7 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
+                }`}>
+                  {(claim.fraudScore * 100).toFixed(0)}%
+                </span>
+              </td>
+              <td className="p-4 text-sm">
+                {claim.status === 'Pending' ? (
+                  <span className="flex items-center gap-1 text-amber-600"><Clock size={16}/> Pending</span>
+                ) : (
+                  <span className="flex items-center gap-1 text-green-600"><CheckCircle size={16}/> Processed</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default ClaimTable;
